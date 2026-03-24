@@ -33,7 +33,7 @@ jobs:
 
       # Dependency/IaC/misconfig scan of repository content
       - name: Trivy filesystem scan (SARIF)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.34.0
         with:
           scan-type: fs
           ignore-unfixed: true
@@ -61,7 +61,7 @@ jobs:
           docker build -t local/mydevsecops:${{ github.sha }} .
 
       - name: Trivy image scan (fail on HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.34.0
         with:
           image-ref: local/mydevsecops:${{ github.sha }}
           format: table
