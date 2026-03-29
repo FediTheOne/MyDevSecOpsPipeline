@@ -9,10 +9,6 @@ jobs:
   build-and-scan:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: MyDevSecOpsPipeline   # 🔥 IMPORTANT
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,5 +25,5 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t mydevsecops:${{ github.sha }} .
+          docker build -f MyDevSecOpsPipeline/Dockerfile -t mydevsecops:${{ github.sha }} MyDevSecOpsPipeline
 
