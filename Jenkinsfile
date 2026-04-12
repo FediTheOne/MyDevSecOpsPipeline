@@ -5,7 +5,6 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Branch: ${env.BRANCH_NAME}"
-                echo "Build #: ${env.BUILD_NUMBER}"
                 checkout scm
             }
         }
@@ -17,9 +16,44 @@ pipeline {
             }
         }
 
+        // ── FIRST REAL SECURITY STAGE ────────────────────────────
+
+        stage('Secrets Detection — Gitleaks') {
+            steps {
+                script {
+                    def exitCode = sh(
+                        script: '''
+                            gitleaks detect \
+                                --source . \
+                                --report-format json \
+                                --report-path gitleaks-report.json \
+                                --redact \
+                                --no-git \
+                                --verbose
+                        ''',
+                        returnStatus: true  // don't fail immediately, we handle it below
+                    )
+
+                    // Archive the report regardless of result
+                    archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+
+                    // Now enforce the gate
+                    if (exitCode == 1) {
+                        error("🚨 Gitleaks found secrets in the code! Check gitleaks-report.json")
+                    } else if (exitCode == 126 || exitCode == 127) {
+                        error("❌ Gitleaks not found on agent. Please install it first.")
+                    } else {
+                        echo "✅ No secrets detected."
+                    }
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+
         stage('Security Placeholder') {
             steps {
-                echo 'Security scans will go here...'
+                echo 'More security stages coming here...'
             }
         }
 
@@ -35,7 +69,10 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline finished with status: ${currentBuild.result}"
+            echo "Pipeline finished with status: ${currentBuild.currentResult}"
+        }
+        failure {
+            echo "Pipeline failed — review the archived gitleaks-report.json"
         }
     }
 }
